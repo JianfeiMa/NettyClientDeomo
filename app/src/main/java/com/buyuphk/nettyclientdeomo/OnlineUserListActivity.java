@@ -2,6 +2,7 @@ package com.buyuphk.nettyclientdeomo;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.ProgressDialog;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -23,16 +24,24 @@ import java.util.List;
 
 public class OnlineUserListActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
     private ListView listView;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_online_user_list);
+
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("正在加载中");
+        progressDialog.setCancelable(false);
+        progressDialog.setCanceledOnTouchOutside(false);
+
         listView = findViewById(R.id.activity_online_user_list_list_view);
         listView.setOnItemClickListener(this);
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String userId = sharedPreferences.getString("userId", "");
         String userName = sharedPreferences.getString("userName", "");
+        progressDialog.show();
         MyAsyncTaskOnlineUserList myAsyncTaskOnlineUserList = new MyAsyncTaskOnlineUserList(this);
         myAsyncTaskOnlineUserList.execute(userId, userName);
     }
@@ -77,6 +86,7 @@ public class OnlineUserListActivity extends AppCompatActivity implements Adapter
         @Override
         protected void onPostExecute(List<OnlineUsersResVO.DataBodyBean> onlineUserList) {
             super.onPostExecute(onlineUserList);
+            onlineUserListActivityWeakReference.get().progressDialog.dismiss();
             onlineUserListActivityWeakReference.get().setData(onlineUserList);
         }
     }

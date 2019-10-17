@@ -22,6 +22,7 @@ import com.buyuphk.nettyclientdeomo.service.MsgHandle;
 import com.buyuphk.nettyclientdeomo.service.RouteRequest;
 import com.buyuphk.nettyclientdeomo.service.impl.MsgHandler;
 import com.buyuphk.nettyclientdeomo.service.impl.RouteRequestImpl;
+import com.buyuphk.nettyclientdeomo.vo.res.OfflineUserResVO;
 
 import java.lang.ref.WeakReference;
 
@@ -87,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String s = tvMessage.getText().toString();
             s = s + "\n" + message + sWillMessage + "\n";
             tvMessage.setText(s);
+            etWillMessage.setText("");
             MyAsyncTask1 myAsyncTask1 = new MyAsyncTask1(sUserId, sUserName);
             myAsyncTask1.execute(message + sWillMessage);
         }
@@ -111,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(this, "用户名不能为空", Toast.LENGTH_SHORT).show();
                 return false;
             }
-            MyAsyncTask2 myAsyncTask2 = new MyAsyncTask2(userId, userName);
+            MyAsyncTask2 myAsyncTask2 = new MyAsyncTask2(this, userId, userName);
             myAsyncTask2.execute();
         } if (item.getItemId() == R.id.menu_main_register) {
             Intent intent = new Intent(this, RegisterActivity.class);
@@ -128,6 +130,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onDestroy();
         unregisterReceiver(myBroadcastReceiver);
         unregisterReceiver(aliveBroadcastReceiver);
+    }
+
+    private void showOfflineResult(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     public static class MyAsyncTask extends AsyncTask<String, Integer, String> {
@@ -166,11 +172,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    /**
+     * 客服端下线网络执行线程
+     */
     public static class MyAsyncTask2 extends AsyncTask<String, Integer, String> {
+        private WeakReference<MainActivity> mainActivityWeakReference;
         private String userId;
         private String userName;
 
-        public MyAsyncTask2(String userId, String userName) {
+        public MyAsyncTask2(MainActivity mainActivity, String userId, String userName) {
+            mainActivityWeakReference = new WeakReference<MainActivity>(mainActivity);
             this.userId = userId;
             this.userName = userName;
         }
@@ -178,8 +189,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         protected String doInBackground(String... strings) {
             RouteRequest routeRequest = new RouteRequestImpl(Long.valueOf(userId), userName);
-            routeRequest.offLine();
+            OfflineUserResVO offlineUserResVO = routeRequest.offLine();
+            if (offlineUserResVO != null) {
+                return offlineUserResVO.getMessage();
+            }
             return null;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            if (s != null) {
+                mainActivityWeakReference.get().showOfflineResult(s);
+            }
         }
     }
 

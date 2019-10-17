@@ -10,6 +10,7 @@ import com.buyuphk.nettyclientdeomo.vo.req.GroupReqVO;
 import com.buyuphk.nettyclientdeomo.vo.req.LoginReqVO;
 import com.buyuphk.nettyclientdeomo.vo.req.P2PReqVO;
 import com.buyuphk.nettyclientdeomo.vo.res.CIMServerResVO;
+import com.buyuphk.nettyclientdeomo.vo.res.OfflineUserResVO;
 import com.buyuphk.nettyclientdeomo.vo.res.OnlineUsersResVO;
 import com.crossoverjie.cim.common.res.BaseResponse;
 
@@ -201,7 +202,7 @@ public class RouteRequestImpl implements RouteRequest {
     }
 
     @Override
-    public void offLine() {
+    public OfflineUserResVO offLine() {
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("userId", appConfiguration.getUserId());
@@ -217,6 +218,7 @@ public class RouteRequestImpl implements RouteRequest {
                 .build();
 
         Response response = null;
+        OfflineUserResVO offlineUserResVO = null;
         try {
             response = okHttpClient.newCall(request).execute();
         } catch (IOException e) {
@@ -224,11 +226,14 @@ public class RouteRequestImpl implements RouteRequest {
             Log.e("debug", e.getMessage());
         } finally {
             try {
-                Log.d("debug", "下线请求返回结果->" + response.body().string());
+                String sResponse = response.body().string();
+                offlineUserResVO = JSON.parseObject(sResponse, OfflineUserResVO.class);
+                //Log.d("debug", "下线请求返回结果->" + response.body().string());
             } catch (IOException e) {
                 e.printStackTrace();
             }
             response.body().close();
         }
+        return offlineUserResVO;
     }
 }

@@ -4,6 +4,7 @@ import com.buyuphk.nettyclientdeomo.vo.req.GroupReqVO;
 import com.buyuphk.nettyclientdeomo.vo.req.LoginReqVO;
 import com.buyuphk.nettyclientdeomo.vo.req.P2PReqVO;
 import com.buyuphk.nettyclientdeomo.vo.res.CIMServerResVO;
+import com.buyuphk.nettyclientdeomo.vo.res.OfflineUserResVO;
 import com.buyuphk.nettyclientdeomo.vo.res.OnlineUsersResVO;
 
 import java.util.List;
@@ -47,7 +48,9 @@ public interface RouteRequest {
      */
     List<OnlineUsersResVO.DataBodyBean> onlineUsers()throws Exception ;
 
-
-    void offLine() ;
+    /**
+     * 下线
+     */
+    OfflineUserResVO offLine() ;
 
 }
