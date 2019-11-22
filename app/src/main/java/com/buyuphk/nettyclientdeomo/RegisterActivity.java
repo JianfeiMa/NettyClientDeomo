@@ -1,7 +1,6 @@
 package com.buyuphk.nettyclientdeomo;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -14,6 +13,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.alibaba.fastjson.JSON;
 import com.buyuphk.nettyclientdeomo.vo.res.RegisterUserResVO;
@@ -35,11 +37,16 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     private TextView tvUserId;
     private TextView tvUserName;
     private MyHandler myHandler;
+    protected boolean isRegister = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle("注册账号");
+        }
         editTextNickName = findViewById(R.id.activity_register_et_nick_name);
         tvUserId = findViewById(R.id.activity_register_tv_user_id);
         tvUserName = findViewById(R.id.activity_register_tv_user_name);
@@ -71,6 +78,17 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         }
         MyAsyncTaskRegister myAsyncTaskRegister = new MyAsyncTaskRegister(this);
         myAsyncTaskRegister.execute(nickName);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isRegister) {
+            Intent intent = new Intent();
+            intent.putExtra("userId", tvUserId.getText().toString());
+            intent.putExtra("userName", tvUserName.getText().toString());
+            setResult(RESULT_OK, intent);
+        }
+        super.onBackPressed();
     }
 
     public static class MyAsyncTaskRegister extends AsyncTask<String, Integer, String> {
@@ -120,6 +138,8 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                 RegisterActivity registerActivity = registerActivityWeakReference.get();
                 RegisterUserResVO.DataBody dataBody = registerUserResVO.getDataBody();
                 if (dataBody != null) {
+                    registerActivity.isRegister = true;
+                    Toast.makeText(registerActivity, registerUserResVO.getMessage(), Toast.LENGTH_SHORT).show();
                     registerActivity.setInfo(String.valueOf(dataBody.getUserId()), dataBody.getUserName());
                 }
             }
@@ -145,8 +165,8 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     @Override
     protected void onResume() {
         super.onResume();
-        MyThread myThread = new MyThread();
-        myThread.start();
+        //MyThread myThread = new MyThread();
+        //myThread.start();
     }
 
     private class MyThread extends Thread {

@@ -1,5 +1,7 @@
 package com.buyuphk.nettyclientdeomo;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.BroadcastReceiver;
@@ -28,8 +30,8 @@ import com.buyuphk.nettyclientdeomo.vo.res.OfflineUserResVO;
 import java.lang.ref.WeakReference;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    private EditText etUserId;
-    private EditText etUserName;
+    private TextView tvUserId;
+    private TextView tvUserName;
     private EditText etMessage;
     private EditText etWillMessage;
     private TextView tvMessage;
@@ -42,11 +44,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        etUserId = findViewById(R.id.activity_main_et_user_id);
-        etUserName = findViewById(R.id.activity_main_et_user_name);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle("Netty即时通讯");
+        }
+        tvUserId = findViewById(R.id.activity_main_et_user_id);
+        tvUserName = findViewById(R.id.activity_main_et_user_name);
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        etUserId.setText(sharedPreferences.getString("userId", ""));
-        etUserName.setText(sharedPreferences.getString("userName", ""));
+        tvUserId.setText(sharedPreferences.getString("userId", ""));
+        tvUserName.setText(sharedPreferences.getString("userName", ""));
         etMessage = findViewById(R.id.activity_main_et_msg);
         etWillMessage = findViewById(R.id.activity_main_et_will_message);
         tvMessage = findViewById(R.id.activity_main_tv_msg);
@@ -65,8 +71,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        String sUserId = etUserId.getText().toString();
-        String sUserName = etUserName.getText().toString();
+        String sUserId = tvUserId.getText().toString();
+        String sUserName = tvUserName.getText().toString();
         if (v.getId() == R.id.activity_main_button_launcher) {
             if (sUserId.equals("")) {
                 Toast.makeText(this, "用户ID不能为空", Toast.LENGTH_SHORT).show();
@@ -76,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(this, "用户名不能为空", Toast.LENGTH_SHORT).show();
                 return;
             }
+            Toast.makeText(this, "正在与服务器建立连接...", Toast.LENGTH_SHORT).show();
             MyAsyncTask myAsyncTask = new MyAsyncTask(sUserId, sUserName, this);
             myAsyncTask.execute();
         } else {
@@ -107,12 +114,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menu_main_offline) {
-            String userId = etUserId.getText().toString();
+            String userId = tvUserId.getText().toString();
             if (userId.equals("")) {
                 Toast.makeText(this, "用户ID不能为空", Toast.LENGTH_SHORT).show();
                 return false;
             }
-            String userName = etUserName.getText().toString();
+            String userName = tvUserName.getText().toString();
             if (userName.equals("")) {
                 Toast.makeText(this, "用户名不能为空", Toast.LENGTH_SHORT).show();
                 return false;
@@ -121,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             myAsyncTask2.execute();
         } if (item.getItemId() == R.id.menu_main_register) {
             Intent intent = new Intent(this, RegisterActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, 88);
         } if (item.getItemId() == R.id.menu_main_online_list) {
             Intent intent = new Intent(this, OnlineUserListActivity.class);
             startActivity(intent);
@@ -139,6 +146,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void showOfflineResult(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        if (sharedPreferences.contains("userId")) {
+            editor.remove("userId");
+        }
+        if (sharedPreferences.contains("userName")) {
+            editor.remove("userName");
+        }
+        editor.apply();
+        tvUserId.setText("");
+        tvUserName.setText("");
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK && data != null) {
+            String userId = data.getStringExtra("userId");
+            String userName = data.getStringExtra("userName");
+            tvUserId.setText(userId);
+            tvUserName.setText(userName);
+            Toast.makeText(this, "注册成功，点击一键启动向服务器发起连接", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public static class MyAsyncTask extends AsyncTask<String, Integer, String> {
@@ -227,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String status = "当前状态：在线";
+            String status = "在线...";
             tvAlive.setText(status);
             tvAlive.setTextColor(Color.BLUE);
 //            String alive = tvAlive.getText().toString();
@@ -244,7 +274,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String status = "当前状态：离线";
+            String status = "离线";
             tvAlive.setText(status);
             tvAlive.setTextColor(Color.RED);
         }

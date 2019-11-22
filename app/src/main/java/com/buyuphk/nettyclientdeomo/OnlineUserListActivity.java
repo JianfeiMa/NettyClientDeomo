@@ -1,5 +1,6 @@
 package com.buyuphk.nettyclientdeomo;
 
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.ProgressDialog;
@@ -12,6 +13,7 @@ import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.buyuphk.nettyclientdeomo.adapter.OnlineUserListAdapter;
@@ -22,7 +24,8 @@ import com.buyuphk.nettyclientdeomo.vo.res.OnlineUsersResVO;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-public class OnlineUserListActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+public class OnlineUserListActivity extends AppCompatActivity implements AdapterView.OnItemLongClickListener {
+    private TextView textViewDescription;
     private ListView listView;
     private ProgressDialog progressDialog;
 
@@ -30,14 +33,17 @@ public class OnlineUserListActivity extends AppCompatActivity implements Adapter
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_online_user_list);
-
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle("在线用户列表");
+        }
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("正在加载中");
         progressDialog.setCancelable(false);
         progressDialog.setCanceledOnTouchOutside(false);
-
+        textViewDescription = findViewById(R.id.activity_online_user_list_text_view);
         listView = findViewById(R.id.activity_online_user_list_list_view);
-        listView.setOnItemClickListener(this);
+        listView.setOnItemLongClickListener(this);
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String userId = sharedPreferences.getString("userId", "");
         String userName = sharedPreferences.getString("userName", "");
@@ -48,6 +54,7 @@ public class OnlineUserListActivity extends AppCompatActivity implements Adapter
 
     public void setData(List<OnlineUsersResVO.DataBodyBean> data) {
         if (data != null) {
+            textViewDescription.setVisibility(View.VISIBLE);
             OnlineUserListAdapter onlineUserListAdapter = new OnlineUserListAdapter(this, data);
             listView.setAdapter(onlineUserListAdapter);
         } else {
@@ -56,12 +63,13 @@ public class OnlineUserListActivity extends AppCompatActivity implements Adapter
     }
 
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
         OnlineUserListAdapter onlineUserListAdapter = (OnlineUserListAdapter) parent.getAdapter();
         OnlineUsersResVO.DataBodyBean dataBodyBean = (OnlineUsersResVO.DataBodyBean) onlineUserListAdapter.getItem(position);
         ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         clipboardManager.setText(String.valueOf(dataBodyBean.getUserId()));
         Toast.makeText(this, "复制用户ID成功", Toast.LENGTH_SHORT).show();
+        return false;
     }
 
     public static class MyAsyncTaskOnlineUserList extends AsyncTask<String, Integer, List<OnlineUsersResVO.DataBodyBean>> {
