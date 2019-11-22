@@ -3,7 +3,11 @@ package com.buyuphk.nettyclientdeomo;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -159,6 +163,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tvUserName.setText("");
     }
 
+    private void createNotification(String message) {
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 1, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        Notification notification = builder
+                .setTicker("你有新的消息")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("")
+                .setContentText(message)
+                .setContentInfo("")
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build();
+        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        notificationManager.notify(0, notification);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -249,6 +269,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (msg != null && !msg.equals("")) {
                 s = s + "\n" + msg;
                 tvMessage.setText(s);
+                createNotification(msg);
             }
         }
     }
