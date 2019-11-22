@@ -24,4 +24,6 @@ public abstract class AbstractClient {
     public abstract void launchNetty(CIMServerResVO.ServerInfo serverInfo);
 
     public abstract void loginCIMServer();
+
+    public abstract void reconnect();
 }

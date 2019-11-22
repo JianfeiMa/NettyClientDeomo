@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
@@ -32,6 +34,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     private EditText editTextNickName;
     private TextView tvUserId;
     private TextView tvUserName;
+    private MyHandler myHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +48,8 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         tvUserName.setText(sharedPreferences.getString("userName", ""));
         Button buttonSubmit = findViewById(R.id.activity_register_button_submit);
         buttonSubmit.setOnClickListener(this);
+        myHandler = new MyHandler();
+
     }
 
     public void setInfo(String userId, String userName) {
@@ -118,6 +123,42 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                     registerActivity.setInfo(String.valueOf(dataBody.getUserId()), dataBody.getUserName());
                 }
             }
+        }
+    }
+
+    private static class MyHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case 0:
+                    String dataFromThread = (String) msg.obj;
+                    Log.d("debug", "从主线程中接收到来自其他线程的数据：" + dataFromThread);
+                    break;
+                default:
+                    Log.d("debug", "null");
+                    break;
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        MyThread myThread = new MyThread();
+        myThread.start();
+    }
+
+    private class MyThread extends Thread {
+        @Override
+        public void run() {
+            super.run();
+            Message message = myHandler.obtainMessage();
+            message.what = 0;
+            message.obj = "这是线程发送过去的数据";
+            boolean resultOfSend = myHandler.sendMessage(message);
+            Log.d("debug", "打印发送结果：" + resultOfSend);
+            tvUserName.setText("在线程操作UI");
         }
     }
 }

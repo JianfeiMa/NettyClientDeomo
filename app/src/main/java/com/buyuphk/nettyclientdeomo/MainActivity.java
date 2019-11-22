@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView tvAlive;
     private MyBroadcastReceiver myBroadcastReceiver;
     private AliveBroadcastReceiver aliveBroadcastReceiver;
+    private InactiveBroadcastReceiver inactiveBroadcastReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +57,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         buttonSendMessage.setOnClickListener(this);
         myBroadcastReceiver = new MyBroadcastReceiver();
         aliveBroadcastReceiver = new AliveBroadcastReceiver();
+        inactiveBroadcastReceiver = new InactiveBroadcastReceiver();
         registerReceiver(myBroadcastReceiver, new IntentFilter("netty_socket"));
         registerReceiver(aliveBroadcastReceiver, new IntentFilter("alive"));
+        registerReceiver(inactiveBroadcastReceiver, new IntentFilter("channelInactive"));
     }
 
     @Override
@@ -130,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onDestroy();
         unregisterReceiver(myBroadcastReceiver);
         unregisterReceiver(aliveBroadcastReceiver);
+        unregisterReceiver(inactiveBroadcastReceiver);
     }
 
     private void showOfflineResult(String message) {
@@ -222,14 +227,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String alive = tvAlive.getText().toString();
-            if (alive.equals("")) {
-                tvAlive.setText("1");
-            } else {
-                long alive1 = Long.valueOf(alive);
-                alive1 ++;
-                tvAlive.setText(String.valueOf(alive1));
-            }
+            String status = "当前状态：在线";
+            tvAlive.setText(status);
+            tvAlive.setTextColor(Color.BLUE);
+//            String alive = tvAlive.getText().toString();
+//            if (alive.equals("")) {
+//                tvAlive.setText("1");
+//            } else {
+//                long alive1 = Long.valueOf(alive);
+//                alive1 ++;
+//            }
+        }
+    }
+
+    public class InactiveBroadcastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String status = "当前状态：离线";
+            tvAlive.setText(status);
+            tvAlive.setTextColor(Color.RED);
         }
     }
 }

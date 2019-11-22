@@ -2,8 +2,11 @@ package com.buyuphk.nettyclientdeomo.handle;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.buyuphk.nettyclientdeomo.thread.ReConnectJob;
 import com.crossoverjie.cim.common.constant.Constants;
 import com.crossoverjie.cim.common.protocol.CIMRequestProto;
 import com.crossoverjie.cim.common.protocol.CIMResponseProto;
@@ -16,7 +19,10 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -44,12 +50,9 @@ public class CIMClientHandle extends SimpleChannelInboundHandler<CIMResponseProt
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         Log.d("debug", "********CIMClientHandle执行了userEventTriggered方法********");
-
         if (evt instanceof IdleStateEvent){
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt ;
-
             //LOGGER.info("定时检测服务端是否存活");
-
             if (idleStateEvent.state() == IdleState.WRITER_IDLE){
                 Log.d("debug", "writer_idle");
                 Intent aliveIntent = new Intent("alive");
@@ -62,9 +65,7 @@ public class CIMClientHandle extends SimpleChannelInboundHandler<CIMResponseProt
 //                    }
 //                }) ;
             }
-
         }
-
         super.userEventTriggered(ctx, evt);
     }
 
@@ -73,26 +74,28 @@ public class CIMClientHandle extends SimpleChannelInboundHandler<CIMResponseProt
         Log.d("debug", "********CIMClientHandle执行了channelActive方法********");
         //客户端和服务端建立连接时调用
         Log.d("debug", "cim server connect success!");
+        saveConnectedStatus(true);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-
+        Log.d("debug", "********CIMClientHandle执行了channelInactive方法********");
+        Log.d("debug", "客户端断开了，重新连接！");
+        saveConnectedStatus(false);
+        Intent intent = new Intent("channelInactive");
+        context.sendBroadcast(intent);
 //        if (shutDownMsg == null){
 //            shutDownMsg = SpringBeanFactory.getBean(ShutDownMsg.class) ;
 //        }
-//
 //        //用户主动退出，不执行重连逻辑
 //        if (shutDownMsg.checkStatus()){
 //            return;
 //        }
-
-//        if (scheduledExecutorService == null){
-//            scheduledExecutorService = SpringBeanFactory.getBean("scheduledTask",ScheduledExecutorService.class) ;
-//        }
-//        LOGGER.info("客户端断开了，重新连接！");
-//        // TODO: 2019-01-22 后期可以改为不用定时任务，连上后就关闭任务 节省性能。
-//        scheduledExecutorService.scheduleAtFixedRate(new ReConnectJob(ctx),0,10, TimeUnit.SECONDS) ;
+        if (scheduledExecutorService == null){
+            scheduledExecutorService = Executors.newScheduledThreadPool(10);
+        }
+        // TODO: 2019-01-22 后期可以改为不用定时任务，连上后就关闭任务 节省性能。
+        scheduledExecutorService.scheduleAtFixedRate(new ReConnectJob(ctx, context),0,10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -101,27 +104,18 @@ public class CIMClientHandle extends SimpleChannelInboundHandler<CIMResponseProt
 //        if (echoService == null){
 //            echoService = SpringBeanFactory.getBean(EchoServiceImpl.class) ;
 //        }
-
-
         //心跳更新时间
         if (msg.getType() == Constants.CommandType.PING){
             //LOGGER.info("收到服务端心跳！！！");
             NettyAttrUtil.updateReaderTime(ctx.channel(),System.currentTimeMillis());
         }
-
         if (msg.getType() != Constants.CommandType.PING) {
             //回调消息
             callBackMsg(msg.getResMsg());
-
             //将消息中的 emoji 表情格式化为 Unicode 编码以便在终端可以显示
             String response = EmojiParser.parseToUnicode(msg.getResMsg());
             //echoService.echo(response);
         }
-
-
-
-
-
     }
 
     /**
@@ -144,7 +138,14 @@ public class CIMClientHandle extends SimpleChannelInboundHandler<CIMResponseProt
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         Log.d("debug", "********CIMClientHandle执行了exceptionCaught方法********");
         //异常时断开连接
-        cause.printStackTrace() ;
-        ctx.close() ;
+        cause.printStackTrace();
+        ctx.close();
+    }
+
+    private void saveConnectedStatus(boolean connectedStatus) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean("isDisconnected", connectedStatus);
+        editor.apply();
     }
 }

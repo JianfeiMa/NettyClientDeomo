@@ -89,7 +89,6 @@ public class CIMClientImpl extends AbstractClient {
         }
         if (future.isSuccess()) {
             //echoService.echo("start cim client success!");
-            //LOGGER.info("启动 cim client 成功");
             Log.d("debug", "启动 cim client 成功");
         }
         channel = (SocketChannel) future.channel();
@@ -111,11 +110,21 @@ public class CIMClientImpl extends AbstractClient {
         );
     }
 
+    @Override
+    public void reconnect() {
+        if (channel != null && channel.isActive()) {
+            return;
+        }
+        //首先清除路由信息，下线
+        routeRequest.offLine();
+        Log.d("debug", "reconnect....");
+        start();
+        Log.d("debug", "reconnect success");
+    }
+
     public void close() {
         if (channel != null) {
             channel.close();
         }
     }
-
-
 }
