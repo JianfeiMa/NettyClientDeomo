@@ -2,47 +2,64 @@ package com.buyuphk.nettyclientdeomo;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.buyuphk.nettyclientdeomo.adapter.ChatRoomAdapter;
+import com.buyuphk.nettyclientdeomo.adapter.OnlineUserListAdapter;
+import com.buyuphk.nettyclientdeomo.db.MySQLiteOpenHelper;
 import com.buyuphk.nettyclientdeomo.service.MsgHandle;
 import com.buyuphk.nettyclientdeomo.service.RouteRequest;
 import com.buyuphk.nettyclientdeomo.service.impl.MsgHandler;
 import com.buyuphk.nettyclientdeomo.service.impl.RouteRequestImpl;
 import com.buyuphk.nettyclientdeomo.vo.res.OfflineUserResVO;
+import com.buyuphk.nettyclientdeomo.vo.res.OnlineUsersResVO;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private TextView tvUserId;
     private TextView tvUserName;
-    private EditText etMessage;
-    private EditText etWillMessage;
-    private TextView tvMessage;
     private TextView tvAlive;
+    private ListView listView;
     private MyBroadcastReceiver myBroadcastReceiver;
     private AliveBroadcastReceiver aliveBroadcastReceiver;
     private InactiveBroadcastReceiver inactiveBroadcastReceiver;
+    private ProgressDialog progressDialog;
+    private OnlineUserListAdapter onlineUserListAdapter;
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,23 +71,58 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         tvUserId = findViewById(R.id.activity_main_et_user_id);
         tvUserName = findViewById(R.id.activity_main_et_user_name);
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        tvUserId.setText(sharedPreferences.getString("userId", ""));
-        tvUserName.setText(sharedPreferences.getString("userName", ""));
-        etMessage = findViewById(R.id.activity_main_et_msg);
-        etWillMessage = findViewById(R.id.activity_main_et_will_message);
-        tvMessage = findViewById(R.id.activity_main_tv_msg);
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String userId = sharedPreferences.getString("userId", "");
+        String userName = sharedPreferences.getString("userName", "");
+        tvUserId.setText(userId);
+        tvUserName.setText(userName);
+        listView = findViewById(R.id.activity_main_list_view);
         tvAlive = findViewById(R.id.activity_main_tv_alive);
         Button buttonLauncher = findViewById(R.id.activity_main_button_launcher);
-        Button buttonSendMessage = findViewById(R.id.activity_main_button_send_message);
         buttonLauncher.setOnClickListener(this);
-        buttonSendMessage.setOnClickListener(this);
         myBroadcastReceiver = new MyBroadcastReceiver();
         aliveBroadcastReceiver = new AliveBroadcastReceiver();
         inactiveBroadcastReceiver = new InactiveBroadcastReceiver();
         registerReceiver(myBroadcastReceiver, new IntentFilter("netty_socket"));
         registerReceiver(aliveBroadcastReceiver, new IntentFilter("alive"));
         registerReceiver(inactiveBroadcastReceiver, new IntentFilter("channelInactive"));
+
+        TextView refresh = findViewById(R.id.activity_main_text_view_refresh);
+        refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String userId = sharedPreferences.getString("userId", "");
+                String userName = sharedPreferences.getString("userName", "");
+                getOnlineUser(userId, userName);
+            }
+        });
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                OnlineUserListAdapter onlineUserListAdapter = (OnlineUserListAdapter) parent.getAdapter();
+                OnlineUsersResVO.DataBodyBean dataBodyBean = (OnlineUsersResVO.DataBodyBean) onlineUserListAdapter.getItem(position);
+                Intent intent = new Intent(MainActivity.this, ChatRoomActivity.class);
+                intent.putExtra("userId", dataBodyBean.getUserId());
+                intent.putExtra("userName", dataBodyBean.getUserName());
+                startActivity(intent);
+            }
+        });
+
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("正在加载中");
+        progressDialog.setCancelable(false);
+        progressDialog.setCanceledOnTouchOutside(false);
+        getOnlineUser(userId, userName);
+    }
+
+    private void getOnlineUser(String userId, String userName) {
+        if (userId != null && !userId.equals("") && userName != null && !userName.equals("")) {
+            progressDialog.show();
+            MyAsyncTaskOnlineUserList myAsyncTaskOnlineUserList = new MyAsyncTaskOnlineUserList(this);
+            myAsyncTaskOnlineUserList.execute(userId, userName);
+        } else {
+            Toast.makeText(this, "还未注册用户", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -89,23 +141,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Toast.makeText(this, "正在与服务器建立连接...", Toast.LENGTH_SHORT).show();
             MyAsyncTask myAsyncTask = new MyAsyncTask(sUserId, sUserName, this);
             myAsyncTask.execute();
-        } else {
-            String message = etMessage.getText().toString();
-            if (message.equals("")) {
-                Toast.makeText(this, "不能输入空的用户ID", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String sWillMessage = etWillMessage.getText().toString();
-            if (sWillMessage.equals("")) {
-                Toast.makeText(this, "不能输入空发送信息", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String s = tvMessage.getText().toString();
-            s = s + "\n" + message + sWillMessage + "\n";
-            tvMessage.setText(s);
-            etWillMessage.setText("");
-            MyAsyncTask1 myAsyncTask1 = new MyAsyncTask1(sUserId, sUserName);
-            myAsyncTask1.execute(message + sWillMessage);
         }
     }
 
@@ -133,9 +168,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } if (item.getItemId() == R.id.menu_main_register) {
             Intent intent = new Intent(this, RegisterActivity.class);
             startActivityForResult(intent, 88);
-        } if (item.getItemId() == R.id.menu_main_online_list) {
-            Intent intent = new Intent(this, OnlineUserListActivity.class);
-            startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -210,23 +242,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public static class MyAsyncTask1 extends AsyncTask<String, Integer, String> {
-        private String userId;
-        private String userName;
-
-        public MyAsyncTask1(String userId, String userName) {
-            this.userId = userId;
-            this.userName = userName;
-        }
-
-        @Override
-        protected String doInBackground(String... strings) {
-            MsgHandle msgHandle = new MsgHandler(userId, userName);
-            msgHandle.sendMsg(strings[0]);
-            return null;
-        }
-    }
-
     /**
      * 客服端下线网络执行线程
      */
@@ -260,15 +275,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    public static class MyAsyncTaskOnlineUserList extends AsyncTask<String, Integer, List<OnlineUsersResVO.DataBodyBean>> {
+        private WeakReference<MainActivity> onlineUserListActivityWeakReference;
+
+        public MyAsyncTaskOnlineUserList(MainActivity onlineUserListActivity) {
+            onlineUserListActivityWeakReference = new WeakReference<MainActivity>(onlineUserListActivity);
+        }
+
+        @Override
+        protected List<OnlineUsersResVO.DataBodyBean> doInBackground(String... strings) {
+            RouteRequest routeRequest = new RouteRequestImpl(Long.valueOf(strings[0]), strings[1]);
+            List<OnlineUsersResVO.DataBodyBean> onlineUserList = null;
+            try {
+                onlineUserList = routeRequest.onlineUsers();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return onlineUserList;
+        }
+
+        @Override
+        protected void onPostExecute(List<OnlineUsersResVO.DataBodyBean> onlineUserList) {
+            super.onPostExecute(onlineUserList);
+            onlineUserListActivityWeakReference.get().progressDialog.dismiss();
+            onlineUserListActivityWeakReference.get().setData(onlineUserList);
+        }
+    }
+
+    public void setData(List<OnlineUsersResVO.DataBodyBean> data) {
+        if (data != null) {
+            OnlineUserListAdapter onlineUserListAdapter = new OnlineUserListAdapter(this, data);
+            listView.setAdapter(onlineUserListAdapter);
+        } else {
+            Toast.makeText(this, "没有在线用户", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     public class MyBroadcastReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
             String msg = intent.getStringExtra("msg");
-            String s = tvMessage.getText().toString();
             if (msg != null && !msg.equals("")) {
-                s = s + "\n" + msg;
-                tvMessage.setText(s);
                 createNotification(msg);
             }
         }
@@ -281,13 +329,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String status = "在线...";
             tvAlive.setText(status);
             tvAlive.setTextColor(Color.BLUE);
-//            String alive = tvAlive.getText().toString();
-//            if (alive.equals("")) {
-//                tvAlive.setText("1");
-//            } else {
-//                long alive1 = Long.valueOf(alive);
-//                alive1 ++;
-//            }
         }
     }
 

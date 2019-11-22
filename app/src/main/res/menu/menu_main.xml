@@ -2,5 +2,4 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/menu_main_offline" android:title="下线"/>
     <item android:id="@+id/menu_main_register" android:title="注册账号"/>
-    <item android:id="@+id/menu_main_online_list" android:title="在线用户列表"/>
 </menu>

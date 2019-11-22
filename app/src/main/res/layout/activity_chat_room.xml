@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ChatRoomActivity">
+
+    <RelativeLayout
+        android:id="@+id/activity_chat_room_input_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true">
+        <Button
+            android:id="@+id/activity_main_button_send_message"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:enabled="false"
+            android:text="发送" />
+        <EditText
+            android:id="@+id/activity_main_et_will_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/activity_main_button_send_message"
+            android:hint="你想说点什么?"
+            android:layout_marginLeft="5dp" />
+    </RelativeLayout>
+
+    <ListView
+        android:id="@+id/activity_main_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/activity_chat_room_input_layout"
+        android:divider="@null"/>
+</RelativeLayout>

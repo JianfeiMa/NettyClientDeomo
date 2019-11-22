@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -44,9 +45,28 @@ public class OnlineUserListActivity extends AppCompatActivity implements Adapter
         textViewDescription = findViewById(R.id.activity_online_user_list_text_view);
         listView = findViewById(R.id.activity_online_user_list_list_view);
         listView.setOnItemLongClickListener(this);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                OnlineUserListAdapter onlineUserListAdapter = (OnlineUserListAdapter) parent.getAdapter();
+                OnlineUsersResVO.DataBodyBean dataBodyBean = (OnlineUsersResVO.DataBodyBean) onlineUserListAdapter.getItem(position);
+                Intent intent = new Intent(OnlineUserListActivity.this, ChatRoomActivity.class);
+                intent.putExtra("userId", dataBodyBean.getUserId());
+                intent.putExtra("userName", dataBodyBean.getUserName());
+                startActivity(intent);
+            }
+        });
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String userId = sharedPreferences.getString("userId", "");
         String userName = sharedPreferences.getString("userName", "");
+        if (userId == null || userId.equals("")) {
+            Toast.makeText(this, "用户ID为空", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (userName == null || userName.equals("")) {
+            Toast.makeText(this, "用户名为空", Toast.LENGTH_SHORT).show();
+            return;
+        }
         progressDialog.show();
         MyAsyncTaskOnlineUserList myAsyncTaskOnlineUserList = new MyAsyncTaskOnlineUserList(this);
         myAsyncTaskOnlineUserList.execute(userId, userName);
