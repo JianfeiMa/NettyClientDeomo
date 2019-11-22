@@ -9,14 +9,15 @@ import com.buyuphk.nettyclientdeomo.vo.res.CIMServerResVO;
  */
 public abstract class AbstractClient {
 
-    public void start() {
+    public boolean start() {
         CIMServerResVO.ServerInfo serverInfo = userLogin();
         if (serverInfo == null) {
             Log.d("debug", "登录失败");
-            return;
+            return false;
         }
         launchNetty(serverInfo);
         loginCIMServer();
+        return true;
     }
 
     public abstract CIMServerResVO.ServerInfo userLogin();

@@ -140,6 +140,7 @@ public class CIMClientHandle extends SimpleChannelInboundHandler<CIMResponseProt
         //异常时断开连接
         cause.printStackTrace();
         ctx.close();
+        saveConnectedStatus(false);
     }
 
     private void saveConnectedStatus(boolean connectedStatus) {

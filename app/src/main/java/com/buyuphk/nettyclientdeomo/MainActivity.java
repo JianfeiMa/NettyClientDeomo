@@ -113,6 +113,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         progressDialog.setCancelable(false);
         progressDialog.setCanceledOnTouchOutside(false);
         getOnlineUser(userId, userName);
+        start(userId, userName);
+    }
+
+    private void start(String userId, String userName) {
+        if (userId != null && userId.equals("")) {
+            Toast.makeText(this, "用户ID为空，请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (userName != null && userName.equals("")) {
+            Toast.makeText(this, "用户名为空，请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        //Toast.makeText(this, "正在与服务器建立连接...", Toast.LENGTH_SHORT).show();
+        MyAsyncTask myAsyncTask = new MyAsyncTask(userId, userName, getApplicationContext());
+        myAsyncTask.execute();
     }
 
     private void getOnlineUser(String userId, String userName) {
@@ -165,9 +180,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             MyAsyncTask2 myAsyncTask2 = new MyAsyncTask2(this, userId, userName);
             myAsyncTask2.execute();
-        } if (item.getItemId() == R.id.menu_main_register) {
+        } else if (item.getItemId() == R.id.menu_main_register) {
             Intent intent = new Intent(this, RegisterActivity.class);
             startActivityForResult(intent, 88);
+        } else if (item.getItemId() == R.id.menu_main_login) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivityForResult(intent, 99);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -214,12 +232,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
+        if (requestCode == 88 && resultCode == RESULT_OK && data != null) {
             String userId = data.getStringExtra("userId");
             String userName = data.getStringExtra("userName");
             tvUserId.setText(userId);
             tvUserName.setText(userName);
-            Toast.makeText(this, "注册成功，点击一键启动向服务器发起连接", Toast.LENGTH_SHORT).show();
+            start(userId, userName);
+        } else if (requestCode == 99 && resultCode == RESULT_OK && data != null) {
+            String userId = data.getStringExtra("userId");
+            String userName = data.getStringExtra("userName");
+            tvUserId.setText(userId);
+            tvUserName.setText(userName);
+            Toast.makeText(this, "", Toast.LENGTH_SHORT).show();
         }
     }
 

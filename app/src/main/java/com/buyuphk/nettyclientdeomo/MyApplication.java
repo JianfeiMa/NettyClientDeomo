@@ -1,6 +1,9 @@
 package com.buyuphk.nettyclientdeomo;
 
 import android.app.Application;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
+import android.util.Log;
 
 import com.buyuphk.nettyclientdeomo.db.MySQLiteOpenHelper;
 
@@ -18,6 +21,16 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         mySQLiteOpenHelper = new MySQLiteOpenHelper(this, "netty_client_demo", null, 1);
+    }
+
+    @Override
+    public void onTerminate() {
+        Log.d(getClass().getSimpleName(), "执行了onTerminate方法");
+        super.onTerminate();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean("isDisconnected", false);
+        editor.apply();
     }
 
     public MySQLiteOpenHelper getMySQLiteOpenHelper() {

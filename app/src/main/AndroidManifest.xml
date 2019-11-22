@@ -23,7 +23,7 @@
             android:name=".androidservice.MyIntentService"
             android:exported="false" />
 
-        <activity android:name=".OnlineUserListActivity" />
+        <activity android:name=".LoginActivity" />
         <activity android:name=".RegisterActivity" />
         <activity
             android:name=".MainActivity"
